@@ -1,21 +1,26 @@
-import { CosmosClient } from "@azure/cosmos";
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { getTasksContainer } from "../shared/cosmos";
+import { handler, ok, requireOrganizationId } from "../shared/http";
+import { toTask } from "../shared/task";
 
-export async function GetTasks(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    context.log(`Http function processed request for url "${request.url}"`);
-    const organizationId = request.query.get('organizationId');
+async function GetTasks(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    const organizationId = requireOrganizationId(request);
 
-    const client = new CosmosClient("this is a connection string");
-    const task = await client.database("TaskApp")
-        .container("Tasks")
-        .items.query(`SELECT * FROM c WHERE c.organizationId = '${organizationId}'`)
-        .fetchNext();
+    const { resources } = await getTasksContainer()
+        .items.query(
+            {
+                query: "SELECT * FROM c WHERE c.organizationId = @org",
+                parameters: [{ name: "@org", value: organizationId }],
+            },
+            { partitionKey: organizationId }
+        )
+        .fetchAll();
 
-    return { jsonBody: task.resources, status: 200 };
-};
+    return ok(resources.map((resource) => toTask(resource)));
+}
 
-app.http('GetTasks', {
-    methods: ['GET'],
-    authLevel: 'anonymous',
-    handler: GetTasks
+app.http("GetTasks", {
+    methods: ["GET", "OPTIONS"],
+    authLevel: "anonymous",
+    handler: handler("GetTasks", GetTasks),
 });

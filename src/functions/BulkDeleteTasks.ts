@@ -1,24 +1,24 @@
-import { CosmosClient } from "@azure/cosmos";
+import { z } from "zod";
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { getTasksContainer } from "../shared/cosmos";
+import { handler, ok, requireOrganizationId } from "../shared/http";
+import { validate } from "../shared/validate";
 
-export async function BulkDeleteTasks(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    context.log(`Http function processed request for url "${request.url}"`);
-    const body = await request.json() as string[];
-    const organizationId = request.query.get('organizationId');
+const bodySchema = z.array(z.string()).min(1).max(100);
 
-    const client = new CosmosClient("this is a connection string");
-    body.forEach(async element => {
-        await client.database("TaskApp")
-        .container("Tasks")
-        .item(element, organizationId)
-        .delete();
-    });
+async function BulkDeleteTasks(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    const organizationId = requireOrganizationId(request);
 
-    return { status: 200 };
-};
+    const ids = validate(bodySchema, await request.json());
 
-app.http('BulkDeleteTasks', {
-    methods: ['DELETE'],
-    authLevel: 'anonymous',
-    handler: BulkDeleteTasks
+    const container = getTasksContainer();
+    await Promise.all(ids.map((id) => container.item(id, organizationId).delete()));
+
+    return ok(undefined, 200);
+}
+
+app.http("BulkDeleteTasks", {
+    methods: ["DELETE", "OPTIONS"],
+    authLevel: "anonymous",
+    handler: handler("BulkDeleteTasks", BulkDeleteTasks),
 });

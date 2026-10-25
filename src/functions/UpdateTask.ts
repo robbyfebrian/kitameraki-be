@@ -1,33 +1,28 @@
-import { CosmosClient } from "@azure/cosmos";
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { handler, ok, requireIdAndOrganizationId } from "../shared/http";
+import { validate } from "../shared/validate";
+import { taskPatchSchema, toTask } from "../shared/task";
+import { item } from "../shared/tasksRepo";
 
+async function UpdateTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    const { id, organizationId } = requireIdAndOrganizationId(request);
 
-export async function UpdateTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const body = await request.json() as object;
-    const taskId = request.query.get('id');
-    const organizationId = request.query.get('organizationId');
+    const body = validate(taskPatchSchema, await request.json());
+    // "add" upserts the path, so a patch can introduce fields the stored
+    // document does not have yet (e.g. `position` on an older task). "replace"
+    // fails when the node is absent.
+    const patch = Object.entries({ ...body, updatedAt: new Date().toISOString() }).map(([key, value]) => ({
+        op: "add" as const,
+        path: `/${key}`,
+        value,
+    }));
 
-    let patchRequests = [];
+    const updated = await item(id, organizationId).patch(patch);
+    return ok(toTask(updated.resource ?? {}));
+}
 
-    for (let key in body) {
-        patchRequests.push({
-            "op": "replace",
-            "path": `/${key}`,
-            "value": body[key]
-        });
-    }
-
-    const client = new CosmosClient("this is a connection string");
-    const createdTask = await client.database("TaskApp")
-        .container("Tasks")
-        .item(taskId, organizationId)
-        .patch(patchRequests);
-
-    return { jsonBody: createdTask.resource, status: 200 };
-};
-
-app.http('UpdateTask', {
-    methods: ['POST'],
-    authLevel: 'anonymous',
-    handler: UpdateTask
+app.http("UpdateTask", {
+    methods: ["POST", "OPTIONS"],
+    authLevel: "anonymous",
+    handler: handler("UpdateTask", UpdateTask),
 });

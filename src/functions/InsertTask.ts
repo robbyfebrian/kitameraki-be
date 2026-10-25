@@ -1,19 +1,29 @@
-import { CosmosClient } from "@azure/cosmos";
+import { randomUUID } from "crypto";
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { getTasksContainer } from "../shared/cosmos";
+import { handler, ok, requireOrganizationId } from "../shared/http";
+import { validate } from "../shared/validate";
+import { taskInputSchema, toTask } from "../shared/task";
+async function InsertTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    const organizationId = requireOrganizationId(request);
+    const body = validate(taskInputSchema, await request.json());
+    const now = new Date().toISOString();
 
-export async function InsertTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const body = await request.json();
+    const created = await getTasksContainer().items.create({
+        id: randomUUID(),
+        organizationId,
+        status: "todo",
+        customFields: {},
+        ...body,
+        createdAt: now,
+        updatedAt: now,
+    });
 
-    const client = new CosmosClient("this is a connection string");
-    const createdTask = await client.database("TaskApp")
-        .container("Tasks")
-        .items.create(body);
+    return ok(toTask(created.resource ?? {}));
+}
 
-    return { jsonBody: createdTask.resource, status: 200 };
-};
-
-app.http('InsertTask', {
-    methods: ['POST'],
-    authLevel: 'anonymous',
-    handler: InsertTask
+app.http("InsertTask", {
+    methods: ["POST", "OPTIONS"],
+    authLevel: "anonymous",
+    handler: handler("InsertTask", InsertTask),
 });
