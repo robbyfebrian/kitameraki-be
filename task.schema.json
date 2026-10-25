@@ -44,6 +44,27 @@
         "maxLength": 50
       },
       "description": "Tags associated with the task"
+    },
+    "customFields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "null"]
+      },
+      "description": "Custom field values keyed by field id; values are strings or null"
+    },
+    "position": {
+      "type": "number",
+      "description": "Sort position of the task within its organization"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
     }
   },
   "required": ["id", "organizationId", "title", "status"],

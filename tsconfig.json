@@ -5,6 +5,9 @@
     "outDir": "dist",
     "rootDir": ".",
     "sourceMap": true,
-    "strict": false
-  }
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "vitest.config.ts"]
 }
