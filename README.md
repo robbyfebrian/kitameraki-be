@@ -42,6 +42,9 @@ src/
     task.ts             Task contract (schemas + document mapping) - pure
     tasksRepo.ts        Single-document I/O for tasks
     formSettings.ts     Form settings contract (schema) - pure
+    taskQuery.ts        Query wire contract + pure SQL/page builders
+    tasksMigrate.ts     Key-rename data migration over tasks
+    migrateKeys.ts      Rename diff + per-task rewrite - pure
   seed.ts               Seed task + form data used by the seeding script
   infra/
     cosmosTools.ts      Shared wipe/write helpers for the scripts
@@ -154,13 +157,13 @@ All routes are under `/api`, accept and return JSON, and require a valid
 | Method | Route | Query | Body | Success | Notes |
 | --- | --- | --- | --- | --- | --- |
 | POST | `/api/InsertTask` | `organizationId` | `TaskInput` | 200, created `Task` | Server assigns `id`, `status` (default `todo`), timestamps |
-| GET | `/api/GetTasks` | `organizationId` | — | 200, `Task[]` | Whole organization partition |
+| GET | `/api/GetTasks` | `organizationId` plus optional `search`, `status` (`todo`\|`in-progress`\|`completed`\|`all`), `priority` (`low`\|`medium`\|`high`\|`all`), `due` (`any`\|`overdue`\|`week`\|`month`\|`none`), `sortKey` (`title`\|`dueDate`\|`requestedDate`), `sortDirection` (`asc`\|`desc`), `page` (≥1), `pageSize` (1–100) | — | No `page`: 200, `Task[]`; with `page`: 200, `{ items, total, page, pageSize }` | Whole organization partition when no `page` (legacy shape); a single page when `page` is present |
 | GET | `/api/GetTask` | `id`, `organizationId` | — | 200, `Task` / 404 | |
 | POST | `/api/UpdateTask` | `id`, `organizationId` | partial `Task` | 200, `Task` | JSON-merge style patch; adds missing fields (e.g. `position`) |
 | DELETE | `/api/DeleteTask` | `id`, `organizationId` | — | 200 | |
 | DELETE | `/api/BulkDeleteTasks` | `organizationId` | `string[]` (1–100 ids) | 200 | |
 | GET | `/api/GetFormSettings` | `organizationId` | — | 200, `FormSettings` / 204 | 204 when the org has no saved form yet |
-| PUT | `/api/SaveFormSettings` | `organizationId` | `FormSettings` | 200, saved `FormSettings` / 409 | Optimistic version check |
+| PUT | `/api/SaveFormSettings` | `organizationId` | `FormSettings` | 200, saved `FormSettings` / 409 | Version-number check, then a conditional `IfMatch` etag replace (`412` → `409`): two concurrent publishes can't silently clobber each other |
 
 Error codes: `400` validation / bad `organizationId`, `404` missing task,
 `409` stale form version or Cosmos conflict, `429` Cosmos throttling
@@ -202,7 +205,7 @@ curl -s "http://localhost:7071/api/GetTasks?organizationId=nope"
 
 ## Data model
 
-**Task** (`src/shared/task.ts`, schema mirrored by `task.schema.json`):
+**Task** (FE wire contract mirrored by the BE zod modules `src/shared/task.ts`, `src/shared/formSettings.ts`, `src/shared/taskQuery.ts`):
 `id`, `organizationId`, `title` (≤100), `description` (≤1000),
 `status` (`todo` | `in-progress` | `completed`), `priority`
 (`low` | `medium` | `high`), `dueDate`, `tags[]` (each ≤50),
@@ -283,8 +286,8 @@ add endpoints that store the form settings.
 - Each route is a small, focused file (17–37 lines) with a single job.
 - Names say what they mean; comments explain *why* (e.g. why a patch uses
   `add`, why form settings answer 204), not *what*.
-- The whole backend is ~680 lines of source (excluding tests), small enough to
-  read in one sitting.
+- The whole backend is roughly 1,200 lines of source (excluding tests), small
+  enough to read in one sitting.
 
 **Maintainability**
 
@@ -302,8 +305,9 @@ add endpoints that store the form settings.
 
 - `GET /api/GetFormSettings` returns the organization's saved form (204 when
   none exists yet).
-- `PUT /api/SaveFormSettings` stores it with an optimistic version check,
-  returning 409 on a stale version so concurrent edits cannot silently clobber
+- `PUT /api/SaveFormSettings` stores it with a two-stage optimistic guard: a
+  version-number check first, then a conditional replace (`IfMatch` etag, a
+  `412` mapped to `409`), so two concurrent publishes cannot silently clobber
   each other.
 
 ## Deploy
