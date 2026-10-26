@@ -4,10 +4,15 @@ import { FormSettings } from "./shared/formSettings";
 /* Seed data for local development and review demos. Kept in the backend so the
    database is the single source of truth; the front-end no longer ships a copy
    of the task seed. Everything here is validated against the real schemas by
-   `infra/seed.ts` before it is written, so a schema change breaks the seed
-   loudly instead of writing drifts. */
+   `src/infra/cosmosTools.ts` (its `writeSeedTasks` / `writeSeedFormSettings`
+   parse through the live schemas) before it is written, so a schema change
+   breaks the seed loudly instead of writing drifts. */
 
 export const SEED_ORGANIZATION_ID = "8f14e45f-ceea-4c28-9d6f-2b1c0c4c9d10";
+
+/* Total task count the seed produces: the curated list below plus generated
+   filler so local dev and review demos exercise pagination and large lists. */
+const SEED_TASK_COUNT = 100;
 
 type SeedTask = {
     title: string;
@@ -58,12 +63,64 @@ const tasks: SeedTask[] = [
     requestedAt: requestedAt as string | null,
 }));
 
+const FILLER_TOPICS = [
+    "invoice reconciliation",
+    "client feedback triage",
+    "dependency upgrade",
+    "dashboard widget",
+    "onboarding checklist",
+    "release smoke test",
+    "storage cleanup",
+    "API rate limits",
+    "notification digest",
+    "search indexing",
+    "mobile layout pass",
+    "analytics events",
+];
+const FILLER_VERBS = ["Review", "Update", "Investigate", "Ship", "Document", "Automate", "Audit", "Refactor"];
+const FILLER_STATUSES: Task["status"][] = ["todo", "in-progress", "completed"];
+const FILLER_PRIORITIES: NonNullable<Task["priority"]>[] = ["low", "medium", "high"];
+const FILLER_DEPARTMENTS = ["Platform", "Design", "Product", "Ops", "Data", "Success", "Security"];
+const FILLER_TAGS = [
+    "backend",
+    "frontend",
+    "performance",
+    "security",
+    "a11y",
+    "dx",
+    "ops",
+    "copy",
+    "reporting",
+    "mobile",
+];
+
+function fillerTasks(count: number): SeedTask[] {
+    return Array.from({ length: count }, (_, i) => {
+        const topic = FILLER_TOPICS[i % FILLER_TOPICS.length];
+        const batch = Math.floor(i / FILLER_TOPICS.length);
+        const due = new Date(Date.UTC(2026, 9, 1 + (i % 45)));
+        const requested = i % 4 === 0 ? new Date(Date.UTC(2026, 10, 1 + (i % 20), i % 24)).toISOString() : null;
+        return {
+            title: `${FILLER_VERBS[i % FILLER_VERBS.length]} ${topic} run ${batch + 1}`,
+            description: `Auto-generated seed task ${i + 1} covering ${topic} for the ${FILLER_DEPARTMENTS[i % FILLER_DEPARTMENTS.length]} queue.`,
+            status: FILLER_STATUSES[i % FILLER_STATUSES.length],
+            priority: FILLER_PRIORITIES[i % FILLER_PRIORITIES.length],
+            due: due.toISOString().slice(0, 10),
+            tags: [FILLER_TAGS[i % FILLER_TAGS.length], FILLER_TAGS[(i + 3) % FILLER_TAGS.length]],
+            email: i % 3 === 0 ? `client${i + 1}@acme.io` : null,
+            department: FILLER_DEPARTMENTS[i % FILLER_DEPARTMENTS.length],
+            requestedAt: requested,
+        };
+    });
+}
+
 function uuid(index: number): string {
     return `a1b2c3d4-e5f6-4a7b-8c9d-${String(index + 1).padStart(12, "0")}`;
 }
 
 export function seedTasks(): Task[] {
-    return tasks.map((seed, index) => ({
+    const filler = fillerTasks(Math.max(0, SEED_TASK_COUNT - tasks.length));
+    return tasks.concat(filler).map((seed, index) => ({
         id: uuid(index),
         organizationId: SEED_ORGANIZATION_ID,
         title: seed.title,
