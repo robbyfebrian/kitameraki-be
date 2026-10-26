@@ -48,8 +48,6 @@ export function requireIdAndOrganizationId(request: HttpRequest): { id: string; 
 /* Every HTTP function is wrapped so it answers the CORS preflight itself
    (Azure Functions has no host-level preflight handler by default) and so all
    failures are mapped and logged the same way. */
-export const HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
-
 export function handler(
     name: string,
     fn: (request: HttpRequest, context: InvocationContext) => Promise<HttpResponseInit>

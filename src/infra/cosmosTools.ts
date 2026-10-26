@@ -1,34 +1,13 @@
-import { CosmosClient, Container } from "@azure/cosmos";
 import { seedTasks, seedFormSettings, SEED_ORGANIZATION_ID } from "../seed";
 import { taskSchema } from "../shared/task";
-import { formSettingsSchema, FORM_SETTINGS_ID } from "../shared/formSettings";
+import { formSettingsSchema } from "../shared/formSettings";
+import { getFormSettingsContainer, getTasksContainer } from "../shared/cosmos";
 
-/* Operational scripts share this connection setup. They import the backend's
-   own schemas so a schema change fails the script instead of writing drift. */
+/* Operational scripts share the backend's connection setup (shared/cosmos.ts,
+   which also applies the COSMOS_EMULATOR TLS opt-in) and its own schemas, so a
+   schema change fails the script instead of writing drift. */
 
-export function tasksContainer(): Container {
-    const connectionString = process.env.COSMOS_CONNECTION_STRING;
-    if (!connectionString) {
-        throw new Error("Missing required environment variable COSMOS_CONNECTION_STRING");
-    }
-    const client = new CosmosClient(connectionString);
-    const databaseId = process.env.COSMOS_DATABASE ?? "TaskApp";
-    const containerId = process.env.COSMOS_TASKS_CONTAINER ?? "Tasks";
-    return client.database(databaseId).container(containerId);
-}
-
-export function formSettingsContainer(): Container {
-    const connectionString = process.env.COSMOS_CONNECTION_STRING;
-    if (!connectionString) {
-        throw new Error("Missing required environment variable COSMOS_CONNECTION_STRING");
-    }
-    const client = new CosmosClient(connectionString);
-    const databaseId = process.env.COSMOS_DATABASE ?? "TaskApp";
-    const containerId = process.env.COSMOS_FORM_SETTINGS_CONTAINER ?? "FormSettings";
-    return client.database(databaseId).container(containerId);
-}
-
-export async function deleteAllTasks(container = tasksContainer()): Promise<number> {
+export async function deleteAllTasks(container = getTasksContainer()): Promise<number> {
     const { resources } = await container.items
         .query(
             { query: "SELECT c.id FROM c WHERE c.organizationId = @org", parameters: [{ name: "@org", value: SEED_ORGANIZATION_ID }] },
@@ -39,18 +18,19 @@ export async function deleteAllTasks(container = tasksContainer()): Promise<numb
     return resources.length;
 }
 
-export async function writeSeedTasks(container = tasksContainer()): Promise<number> {
+export async function writeSeedTasks(container = getTasksContainer()): Promise<number> {
     // Validate before writing: the seed must always satisfy the live schema.
     const tasks = seedTasks().map((task) => taskSchema.parse(task));
-    await Promise.all(tasks.map((task) => container.items.upsert(task)));
+    // Batch the upserts so a large seed does not open every write at once.
+    const batchSize = 100;
+    for (let i = 0; i < tasks.length; i += batchSize) {
+        await Promise.all(tasks.slice(i, i + batchSize).map((task) => container.items.upsert(task)));
+    }
     return tasks.length;
 }
 
-export async function writeSeedFormSettings(container = formSettingsContainer()): Promise<number> {
+export async function writeSeedFormSettings(container = getFormSettingsContainer()): Promise<number> {
     const settings = formSettingsSchema.parse(seedFormSettings());
     await container.items.upsert(settings);
     return settings.version;
 }
-
-export const SEED_ORGANIZATION = SEED_ORGANIZATION_ID;
-export const SEED_FORM_ID = FORM_SETTINGS_ID;

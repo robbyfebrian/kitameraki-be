@@ -1,11 +1,12 @@
-import { deleteAllTasks, writeSeedTasks, writeSeedFormSettings, SEED_ORGANIZATION } from "./cosmosTools";
+import { deleteAllTasks, writeSeedTasks, writeSeedFormSettings } from "./cosmosTools";
+import { SEED_ORGANIZATION_ID } from "../seed";
 
 /* Wipe the seed organization's tasks and write the seed task list and form
    settings. Idempotent: run it as often as you like. */
 
 (async () => {
     const removed = await deleteAllTasks();
-    console.log(`removed ${removed} existing task(s) for org ${SEED_ORGANIZATION}`);
+    console.log(`removed ${removed} existing task(s) for org ${SEED_ORGANIZATION_ID}`);
 
     const written = await writeSeedTasks();
     console.log(`seeded ${written} task(s)`);
