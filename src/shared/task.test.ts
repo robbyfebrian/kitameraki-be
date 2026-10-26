@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { stripMetadata, taskInputSchema, taskPatchSchema, taskSchema, toTask } from "./task";
+import { SEED_ORGANIZATION_ID } from "../seed";
 
 const validTask = {
     id: "a1b2c3d4-e5f6-4a7b-8c9d-000000000001",
-    organizationId: "8f14e45f-ceea-4c28-9d6f-2b1c0c4c9d10",
+    organizationId: SEED_ORGANIZATION_ID,
     title: "Write docs",
     status: "todo",
     customFields: {},

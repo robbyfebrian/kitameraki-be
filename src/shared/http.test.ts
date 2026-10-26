@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HttpRequest, InvocationContext } from "@azure/functions";
 import { handler, requireIdAndOrganizationId, requireOrganizationId, ValidationError } from "./http";
+import { SEED_ORGANIZATION_ID } from "../seed";
 
 /* Minimal fakes: the handler only touches `query.get` and `method` on the
    request and `log`/`error` on the context, so a stub with those is enough and
@@ -23,7 +24,7 @@ function fakeContext(): InvocationContext & { logs: string[]; errors: unknown[] 
     } as unknown as InvocationContext & { logs: string[]; errors: unknown[] };
 }
 
-const ORG = "8f14e45f-ceea-4c28-9d6f-2b1c0c4c9d10";
+const ORG = SEED_ORGANIZATION_ID;
 
 describe("requireOrganizationId", () => {
     it("returns a valid UUID", () => {

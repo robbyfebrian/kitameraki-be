@@ -22,8 +22,8 @@ export const taskSchema = taskInputSchema.extend({
     updatedAt: z.string().optional(),
 });
 
-export type TaskInput = z.infer<typeof taskInputSchema>;
-export type TaskPatch = z.infer<typeof taskPatchSchema>;
+type TaskInput = z.infer<typeof taskInputSchema>;
+type TaskPatch = z.infer<typeof taskPatchSchema>;
 export type Task = z.infer<typeof taskSchema>;
 
 /* Cosmos returns system metadata (`_rid`, `_etag`, …) alongside the document.

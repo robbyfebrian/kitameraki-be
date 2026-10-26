@@ -6,7 +6,7 @@ export const FORM_SETTINGS_ID = "task-form";
 
 const coreFieldKey = z.enum(["title", "description", "status", "priority", "dueDate", "tags"]);
 
-export const coreFieldSchema = z.object({
+const coreFieldSchema = z.object({
     key: coreFieldKey,
     label: z.string(),
     visible: z.boolean(),
@@ -16,7 +16,7 @@ export const coreFieldSchema = z.object({
     order: z.number().int().optional(),
 });
 
-export const formFieldSchema = z.object({
+const formFieldSchema = z.object({
     id: z.string(),
     key: z.string(),
     label: z.string(),
@@ -50,7 +50,7 @@ export const formFieldSchema = z.object({
 });
 
 export const formSettingsSchema = z.object({
-    id: z.literal("task-form"),
+    id: z.literal(FORM_SETTINGS_ID),
     organizationId: z.string(),
     version: z.number().int().nonnegative(),
     title: z.string(),
@@ -61,6 +61,6 @@ export const formSettingsSchema = z.object({
     updatedAt: z.string(),
 });
 
-export type CoreField = z.infer<typeof coreFieldSchema>;
-export type FormField = z.infer<typeof formFieldSchema>;
+type CoreField = z.infer<typeof coreFieldSchema>;
+type FormField = z.infer<typeof formFieldSchema>;
 export type FormSettings = z.infer<typeof formSettingsSchema>;

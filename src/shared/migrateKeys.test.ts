@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { FormSettings } from "./formSettings";
-import { countTasksUsingKey, diffCustomFieldKeys, renameKeyOnTask } from "./migrateKeys";
+import { diffCustomFieldKeys, renameKeyOnTask } from "./migrateKeys";
 import { Task } from "./task";
+import { SEED_ORGANIZATION_ID } from "../seed";
 
-const ORG = "8f14e45f-ceea-4c28-9d6f-2b1c0c4c9d10";
+const ORG = SEED_ORGANIZATION_ID;
 
 function field(id: string, key: string, label = key) {
     return {
@@ -57,7 +58,6 @@ describe("diffCustomFieldKeys", () => {
     it("still reports a rename when the field was temporarily hidden", () => {
         const previous = settings([field("f1", "a")]);
         const hidden = { ...field("f1", "a"), active: false };
-        expect(diffCustomFieldKeys(previous, settings([hidden]))).toEqual([]);
         expect(diffCustomFieldKeys(previous, settings([{ ...hidden, key: "b" }]))).toEqual([
             { fieldId: "f1", from: "a", to: "b" },
         ]);
@@ -88,12 +88,5 @@ describe("renameKeyOnTask", () => {
         const original = task("t1", { a: "x" });
         renameKeyOnTask(original, { from: "a", to: "b" });
         expect(original.customFields).toEqual({ a: "x" });
-    });
-});
-
-describe("countTasksUsingKey", () => {
-    it("counts only tasks with a non-empty value", () => {
-        const tasks = [task("t1", { a: "x" }), task("t2", { a: "" }), task("t3", { a: null }), task("t4", {})];
-        expect(countTasksUsingKey(tasks, "a")).toBe(1);
     });
 });

@@ -55,12 +55,3 @@ export function renameKeyOnTask(task: Task, rename: Pick<KeyRename, "from" | "to
     next[rename.to] = current[rename.from];
     return { ...task, customFields: next };
 }
-
-export function hasValue(task: Task, key: string): boolean {
-    const value = task.customFields?.[key];
-    return value !== undefined && value !== null && String(value).trim() !== "";
-}
-
-export function countTasksUsingKey(tasks: Task[], key: string): number {
-    return tasks.reduce((count, task) => count + (hasValue(task, key) ? 1 : 0), 0);
-}
