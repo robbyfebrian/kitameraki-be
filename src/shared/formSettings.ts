@@ -35,9 +35,6 @@ const formFieldSchema = z.object({
     suffix: z.string().optional(),
     minLength: z.number().optional(),
     maxLength: z.number().optional(),
-    multiline: z.boolean().optional(),
-    rows: z.number().optional(),
-    autoGrow: z.boolean().optional(),
     minDate: z.string().optional(),
     maxDate: z.string().optional(),
     disablePast: z.boolean().optional(),
@@ -45,7 +42,6 @@ const formFieldSchema = z.object({
     /* Datetime-only: display format of the time part (native input stays
        locale-driven, so this is presentation metadata). */
     timeFormat: z.enum(["12h", "24h"]).optional(),
-    allowedDomains: z.array(z.string()).optional(),
     options: z.array(z.string()).optional(),
 });
 
