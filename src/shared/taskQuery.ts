@@ -78,11 +78,13 @@ export function buildTaskQuery(
 
     const search = params.search?.trim();
     if (search) {
-        // CONTAINS with a third `true` argument is case-insensitive; COALESCE
-        // covers tasks without a description property. If a live backend ever
-        // rejects the COALESCE form, the documented fallback is dropping the
-        // second CONTAINS (title-only search), not a quiet rewrite.
-        conditions.push('(CONTAINS(c.title, @search, true) OR CONTAINS(COALESCE(c.description, ""), @search, true))');
+        // CONTAINS with a third `true` argument is case-insensitive. Cosmos SQL
+        // has no COALESCE (the emulator rejects it with SC2005), so the missing
+        // description is guarded with IS_DEFINED instead: a task without the
+        // property simply fails the description arm and still matches on title.
+        conditions.push(
+            '(CONTAINS(c.title, @search, true) OR (IS_DEFINED(c.description) AND CONTAINS(c.description, @search, true)))'
+        );
         parameters.push({ name: "@search", value: search });
     }
 
@@ -143,17 +145,25 @@ function pagedSpec(plan: TaskQueryPlan, whereSuffix: string, orderBy: string, of
     };
 }
 
+/* A task "has" the sort field only when it is present AND non-null. A stored
+   custom field is often explicitly null (the FE serializes an empty answer as
+   null), and IS_DEFINED alone counts that as present — which put nulls first
+   under ORDER BY ASC. The two legs are exact complements of this predicate. */
+function hasSortField(field: string): string {
+    return `IS_DEFINED(${field}) AND NOT IS_NULL(${field})`;
+}
+
 /* Items WITH the sort field, sorted properly. ORDER BY takes a property path
-   only, so the IS_DEFINED filter in the WHERE (not an expression in ORDER BY)
-   keeps leg A deterministic. */
+   only, so the IS_DEFINED/IS_NULL filter in the WHERE (not an expression in
+   ORDER BY) keeps leg A deterministic. */
 export function legAQuery(plan: TaskQueryPlan, offset: number, limit: number): PagedQuerySpec {
-    return pagedSpec(plan, ` AND IS_DEFINED(${plan.sortField})`, `${plan.sortField} ${plan.sortDirection}`, offset, limit);
+    return pagedSpec(plan, ` AND ${hasSortField(plan.sortField!)}`, `${plan.sortField} ${plan.sortDirection}`, offset, limit);
 }
 
 /* Items WITHOUT the sort field, kept stable by createdAt DESC. Nulls last
    regardless of direction — the merge below decides the order. */
 export function legBQuery(plan: TaskQueryPlan, offset: number, limit: number): PagedQuerySpec {
-    return pagedSpec(plan, ` AND NOT IS_DEFINED(${plan.sortField})`, "c.createdAt DESC", offset, limit);
+    return pagedSpec(plan, ` AND NOT (${hasSortField(plan.sortField!)})`, "c.createdAt DESC", offset, limit);
 }
 
 /* No sortKey: no ORDER BY on the sort field, but a fixed createdAt DESC keeps
@@ -168,7 +178,7 @@ export function countQuery(plan: TaskQueryPlan): PagedQuerySpec {
 
 export function definedCountQuery(plan: TaskQueryPlan): PagedQuerySpec {
     return {
-        query: `SELECT VALUE COUNT(1) FROM c WHERE ${plan.where} AND IS_DEFINED(${plan.sortField})`,
+        query: `SELECT VALUE COUNT(1) FROM c WHERE ${plan.where} AND ${hasSortField(plan.sortField!)}`,
         parameters: plan.parameters,
     };
 }

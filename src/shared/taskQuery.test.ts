@@ -107,6 +107,23 @@ describe("buildTaskQuery", () => {
         expect(result.where).toBe('c.organizationId = @org AND ((NOT IS_DEFINED(c.dueDate)) OR (c.dueDate = ""))');
     });
 
+    it("searches title and description without COALESCE", () => {
+        const result = plan({ search: "mom" });
+        expect(result.parameters).toEqual([
+            { name: "@org", value: ORG },
+            { name: "@search", value: "mom" },
+        ]);
+        expect(result.where).toContain("CONTAINS(c.title, @search, true)");
+        expect(result.where).toContain("IS_DEFINED(c.description)");
+        // Cosmos SQL has no COALESCE; the emulator rejects it with SC2005.
+        expect(result.where).not.toContain("COALESCE");
+    });
+
+    it("trims the search term and ignores an all-whitespace one", () => {
+        expect(plan({ search: "  mom  " }).parameters).toContainEqual({ name: "@search", value: "mom" });
+        expect(plan({ search: "   " }).where).toBe("c.organizationId = @org");
+    });
+
     it("maps sort keys to Cosmos paths and defaults to ascending", () => {
         expect(plan({ sortKey: "dueDate" })).toMatchObject({
             sortField: "c.dueDate",
@@ -130,7 +147,7 @@ describe("paged query builders", () => {
         const p = plan({ sortKey: "dueDate", sortDirection: "desc" });
         const spec = legAQuery(p, 20, 10);
         expect(spec.query).toBe(
-            "SELECT * FROM c WHERE " + p.where + " AND IS_DEFINED(c.dueDate) ORDER BY c.dueDate desc OFFSET @offset LIMIT @limit"
+            "SELECT * FROM c WHERE " + p.where + " AND IS_DEFINED(c.dueDate) AND NOT IS_NULL(c.dueDate) ORDER BY c.dueDate desc OFFSET @offset LIMIT @limit"
         );
         expect(spec.parameters.slice(-2)).toEqual([
             { name: "@offset", value: 20 },
@@ -142,7 +159,7 @@ describe("paged query builders", () => {
         const p = plan({ sortKey: "requestedDate" });
         const spec = legBQuery(p, 0, 5);
         expect(spec.query).toBe(
-            "SELECT * FROM c WHERE " + p.where + ' AND NOT IS_DEFINED(c.customFields["requested_at"]) ORDER BY c.createdAt DESC OFFSET @offset LIMIT @limit'
+            "SELECT * FROM c WHERE " + p.where + ' AND NOT (IS_DEFINED(c.customFields["requested_at"]) AND NOT IS_NULL(c.customFields["requested_at"])) ORDER BY c.createdAt DESC OFFSET @offset LIMIT @limit'
         );
     });
 
@@ -158,7 +175,7 @@ describe("paged query builders", () => {
         const p = plan({ due: "overdue", sortKey: "dueDate" });
         expect(countQuery(p).query).toBe("SELECT VALUE COUNT(1) FROM c WHERE " + p.where);
         expect(definedCountQuery(p).query).toBe(
-            "SELECT VALUE COUNT(1) FROM c WHERE " + p.where + " AND IS_DEFINED(c.dueDate)"
+            "SELECT VALUE COUNT(1) FROM c WHERE " + p.where + " AND IS_DEFINED(c.dueDate) AND NOT IS_NULL(c.dueDate)"
         );
     });
 
