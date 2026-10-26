@@ -1,15 +1,19 @@
 services:
   cosmos:
-    # The legacy amd64 image crashes under QEMU on Apple Silicon, so use the
-    # native arm64 "vnext" emulator build. It is a different (thin-client)
-    # emulator, so its config differs: HTTPS on 8081 (matching the connection
-    # string the app already uses) and persistence via DATA_PATH.
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest-arm64
+    # The "vnext" emulator is a thin-client build published per architecture.
+    # The default arch-specific tag is arm64 (for Apple Silicon), which crashes
+    # under QEMU on Intel hosts, so pick the native build for the host arch.
+    # Override with COSMOS_EMULATOR_IMAGE if needed.
+    image: "${COSMOS_EMULATOR_IMAGE:-mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest-amd64}"
     container_name: kitameraki-cosmos
+    # Host ports are overridable because 8080/8081/1234 are commonly taken on a
+    # dev machine (8080 by httpd/dsh, 8081 by local PHP/Laravel servers). Keep
+    # the container-side ports fixed and only shift the host mapping, so the
+    # emulator's internal config never needs to change.
     ports:
-      - "8081:8081"   # Cosmos NoSQL gateway (HTTPS)
-      - "8080:8080"   # health probe (/alive, /ready, /status)
-      - "1234:1234"   # data explorer
+      - "${COSMOS_GATEWAY_PORT:-8081}:8081"   # Cosmos NoSQL gateway (HTTPS)
+      - "${COSMOS_HEALTH_PORT:-8080}:8080"    # health probe (/alive, /ready, /status)
+      - "${COSMOS_EXPLORER_PORT:-1234}:1234"  # data explorer
     environment:
       DATA_PATH: "/data"
       PROTOCOL: "https"

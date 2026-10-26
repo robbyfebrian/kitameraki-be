@@ -85,6 +85,32 @@ For watch mode, run `npm run watch` in one terminal and `func start` in another.
 If `npm start` reports `address already in use`, another Functions host is
 already on 7071 — find it with `lsof -nP -iTCP:7071 -sTCP:LISTEN`.
 
+### Host architecture (Apple Silicon vs Intel)
+
+The `vnext` emulator image is published per CPU architecture. `vnext-latest`
+defaults to the **arm64** build, which crashes under QEMU on an Intel host, so
+`docker-compose.yml` pins the **amd64** build and both are overridable:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `COSMOS_EMULATOR_IMAGE` | `...:vnext-latest-amd64` | Emulator image tag; use `vnext-latest-arm64` on Apple Silicon |
+| `COSMOS_GATEWAY_PORT` | `8081` | Host port for the HTTPS gateway |
+| `COSMOS_HEALTH_PORT` | `8080` | Host port for the health probe |
+| `COSMOS_EXPLORER_PORT` | `1234` | Host port for the data explorer |
+
+Set them in a `.env` file (gitignored). If 8080/8081/1234 are already taken on
+your machine, shift the host ports only — for example:
+
+```
+COSMOS_GATEWAY_PORT=8091
+COSMOS_HEALTH_PORT=8090
+```
+
+Then point `COSMOS_CONNECTION_STRING` in `local.settings.json` at the same
+gateway port (`AccountEndpoint=https://localhost:8091/;...`) and re-run
+`./infra/init-db.sh`. Keep the container-side ports fixed; only the host mapping
+changes, so the emulator's internal config is untouched.
+
 ### Emulator vs. real Azure
 
 `local.settings.json` ships with `COSMOS_EMULATOR=true`, which makes

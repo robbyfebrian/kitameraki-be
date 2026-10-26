@@ -26,7 +26,6 @@ export const formFieldSchema = z.object({
     description: z.string().optional(),
     width: z.union([z.literal(1), z.literal(2)]),
     active: z.boolean(),
-    /* Shared z-order with core fields — see coreFieldSchema.order. */
     order: z.number().int().optional(),
     validationMessage: z.string().optional(),
     disabled: z.boolean().optional(),
@@ -43,6 +42,9 @@ export const formFieldSchema = z.object({
     maxDate: z.string().optional(),
     disablePast: z.boolean().optional(),
     disableFuture: z.boolean().optional(),
+    /* Datetime-only: display format of the time part (native input stays
+       locale-driven, so this is presentation metadata). */
+    timeFormat: z.enum(["12h", "24h"]).optional(),
     allowedDomains: z.array(z.string()).optional(),
     options: z.array(z.string()).optional(),
 });
