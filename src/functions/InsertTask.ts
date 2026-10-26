@@ -16,7 +16,6 @@ async function InsertTask(request: HttpRequest, context: InvocationContext): Pro
     const created = await getTasksContainer().items.create({
         id: randomUUID(),
         organizationId,
-        status: "todo",
         customFields: {},
         ...body,
         createdAt: now,

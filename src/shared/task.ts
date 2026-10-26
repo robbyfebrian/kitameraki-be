@@ -3,7 +3,9 @@ import { z } from "zod";
 export const taskInputSchema = z.object({
     title: z.string().min(1).max(100),
     description: z.string().max(1000).optional(),
-    status: z.enum(["todo", "in-progress", "completed"]).optional(),
+    // Required, matching the FE contract: the create form always sends a status,
+    // and a task without one would be ambiguous downstream.
+    status: z.enum(["todo", "in-progress", "completed"]),
     priority: z.enum(["low", "medium", "high"]).optional(),
     dueDate: z.string().optional(),
     tags: z.array(z.string().max(50)).optional(),

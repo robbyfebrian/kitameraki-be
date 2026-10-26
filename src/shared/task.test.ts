@@ -11,23 +11,27 @@ const validTask = {
 };
 
 describe("taskInputSchema", () => {
-    it("accepts a minimal body and applies no defaults to optional fields", () => {
-        const parsed = taskInputSchema.parse({ title: "Write docs" });
+    it("accepts a minimal body with a required status", () => {
+        const parsed = taskInputSchema.parse({ title: "Write docs", status: "todo" });
         expect(parsed.title).toBe("Write docs");
-        expect(parsed.status).toBeUndefined();
+        expect(parsed.status).toBe("todo");
+    });
+
+    it("requires a status, matching the FE contract", () => {
+        expect(taskInputSchema.safeParse({ title: "Write docs" }).success).toBe(false);
     });
 
     it("rejects an empty title and an unknown status", () => {
-        expect(taskInputSchema.safeParse({ title: "" }).success).toBe(false);
+        expect(taskInputSchema.safeParse({ title: "", status: "todo" }).success).toBe(false);
         expect(taskInputSchema.safeParse({ title: "x", status: "archived" }).success).toBe(false);
     });
 
     it("enforces the title length cap", () => {
-        expect(taskInputSchema.safeParse({ title: "x".repeat(101) }).success).toBe(false);
+        expect(taskInputSchema.safeParse({ title: "x".repeat(101), status: "todo" }).success).toBe(false);
     });
 
     it("accepts null custom field values", () => {
-        const parsed = taskInputSchema.parse({ title: "x", customFields: { client_email: null, department: "Ops" } });
+        const parsed = taskInputSchema.parse({ title: "x", status: "todo", customFields: { client_email: null, department: "Ops" } });
         expect(parsed.customFields).toEqual({ client_email: null, department: "Ops" });
     });
 });
