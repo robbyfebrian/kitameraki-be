@@ -62,5 +62,5 @@ export const formSettingsSchema = z.object({
 });
 
 type CoreField = z.infer<typeof coreFieldSchema>;
-type FormField = z.infer<typeof formFieldSchema>;
+export type FormField = z.infer<typeof formFieldSchema>;
 export type FormSettings = z.infer<typeof formSettingsSchema>;
