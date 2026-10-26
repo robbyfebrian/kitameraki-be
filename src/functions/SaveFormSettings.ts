@@ -35,7 +35,24 @@ async function SaveFormSettings(request: HttpRequest, context: InvocationContext
         updatedAt: new Date().toISOString(),
     };
 
-    await container.items.upsert(saved);
+    // Quasi-atomic second guard: the replace only lands when the document has
+    // not been touched since our version-check read (matches the `_etag` from
+    // that read). Cosmos rejects it with 412, mapped to a client-facing 409.
+    try {
+        if (existing) {
+            const etag = (existing as Record<string, unknown>)._etag as string;
+            await container
+                .item(FORM_SETTINGS_ID, organizationId)
+                .replace(saved, { accessCondition: { type: "IfMatch", condition: etag } });
+        } else {
+            await container.items.upsert(saved);
+        }
+    } catch (err) {
+        if ((err as { code?: number }).code === 412) {
+            return fail(409, "Version conflict: the form settings changed concurrently, reload and retry");
+        }
+        throw err;
+    }
 
     return ok({ ...saved, migrations });
 }
