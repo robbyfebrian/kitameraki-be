@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { stripMetadata, taskInputSchema, taskPatchSchema, taskSchema, toTask } from "./task";
-import { SEED_ORGANIZATION_ID } from "../seed";
+import { stripMetadata, taskInputSchema, taskPatchSchema, taskSchema, toTask } from "./schema";
+import { SEED_ORGANIZATION_ID } from "../../seed";
 
 const validTask = {
     id: "a1b2c3d4-e5f6-4a7b-8c9d-000000000001",

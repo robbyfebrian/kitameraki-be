@@ -1,11 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { handler, ok, requireIdAndOrganizationId } from "../shared/http";
-import { item } from "../shared/tasksRepo";
+import { handler, ok } from "../../platform/http";
+import { requireIdAndOrganizationId } from "../../platform/ids";
+import { removeTask } from "../../domain/task/service";
 
 async function DeleteTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     const { id, organizationId } = requireIdAndOrganizationId(request);
 
-    await item(id, organizationId).delete();
+    await removeTask(id, organizationId);
 
     return ok(undefined, 200);
 }

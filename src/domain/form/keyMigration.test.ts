@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { FormSettings } from "./formSettings";
-import { diffCustomFieldKeys, renameKeyOnTask } from "./migrateKeys";
-import { Task } from "./task";
-import { SEED_ORGANIZATION_ID } from "../seed";
+import { FormSettings } from "./schema";
+import { diffCustomFieldKeys, renameKeyOnTask } from "./keyMigration";
+import { Task } from "../task/schema";
+import { SEED_ORGANIZATION_ID } from "../../seed";
 
 const ORG = SEED_ORGANIZATION_ID;
 

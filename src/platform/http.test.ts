@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HttpRequest, InvocationContext } from "@azure/functions";
-import { handler, requireIdAndOrganizationId, requireOrganizationId, ValidationError } from "./http";
+import { handler, ValidationError } from "./http";
+import { requireIdAndOrganizationId, requireOrganizationId } from "./ids";
 import { SEED_ORGANIZATION_ID } from "../seed";
 
 /* Minimal fakes: the handler only touches `query.get` and `method` on the

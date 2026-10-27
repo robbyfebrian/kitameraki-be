@@ -12,8 +12,8 @@ import {
     pagedNoSortQuery,
     shiftDate,
     taskQuerySchema,
-} from "./taskQuery";
-import { SEED_ORGANIZATION_ID } from "../seed";
+} from "./index";
+import { SEED_ORGANIZATION_ID } from "../../../seed";
 
 const ORG = SEED_ORGANIZATION_ID;
 const TODAY = "2026-10-26";

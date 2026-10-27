@@ -1,9 +1,9 @@
 import { seedTasks, seedFormSettings, SEED_ORGANIZATION_ID } from "../seed";
-import { taskSchema } from "../shared/task";
-import { formSettingsSchema } from "../shared/formSettings";
-import { getFormSettingsContainer, getTasksContainer } from "../shared/cosmos";
+import { taskSchema } from "../domain/task/schema";
+import { formSettingsSchema } from "../domain/form/schema";
+import { getFormSettingsContainer, getTasksContainer } from "../platform/cosmos";
 
-/* Operational scripts share the backend's connection setup (shared/cosmos.ts,
+/* Operational scripts share the backend's connection setup (platform/cosmos.ts,
    which also applies the COSMOS_EMULATOR TLS opt-in) and its own schemas, so a
    schema change fails the script instead of writing drift. */
 

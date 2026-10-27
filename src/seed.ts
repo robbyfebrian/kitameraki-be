@@ -1,5 +1,5 @@
-import { Task } from "./shared/task";
-import { FormSettings } from "./shared/formSettings";
+import { Task } from "./domain/task/schema";
+import { FormSettings } from "./domain/form/schema";
 
 /* Seed data for local development and review demos. Kept in the backend so the
    database is the single source of truth; the front-end no longer ships a copy

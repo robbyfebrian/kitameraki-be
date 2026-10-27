@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { validateCustomAnswers } from "./fieldValidation";
-import { FormField, FormSettings } from "./formSettings";
-import { SEED_ORGANIZATION_ID } from "../seed";
+import { validateCustomAnswers } from "./fieldRules";
+import { FormField, FormSettings } from "./schema";
+import { SEED_ORGANIZATION_ID } from "../../seed";
 
 const ORG = SEED_ORGANIZATION_ID;
 const TODAY = "2026-10-26";

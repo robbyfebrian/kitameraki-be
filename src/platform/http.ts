@@ -20,30 +20,7 @@ export function preflight(): HttpResponseInit {
 
 export class ValidationError extends Error {}
 
-/* Every document is partitioned by organization, so an invalid id would either
-   create unreachable data or silently scope a request to a phantom org. Reject
-   it at the boundary, before it reaches Cosmos. */
-const ORGANIZATION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export function requireOrganizationId(request: HttpRequest): string {
-    const organizationId = request.query.get("organizationId");
-    if (!organizationId) {
-        throw new ValidationError("organizationId is required");
-    }
-    if (!ORGANIZATION_ID_PATTERN.test(organizationId)) {
-        throw new ValidationError("organizationId must be a UUID");
-    }
-    return organizationId;
-}
-
-export function requireIdAndOrganizationId(request: HttpRequest): { id: string; organizationId: string } {
-    const id = request.query.get("id");
-    if (!id) {
-        throw new ValidationError("id is required");
-    }
-    return { id, organizationId: requireOrganizationId(request) };
-}
-
+export class ConflictError extends Error {}
 
 /* Every HTTP function is wrapped so it answers the CORS preflight itself
    (Azure Functions has no host-level preflight handler by default) and so all
@@ -69,6 +46,12 @@ export function handler(
             if (err instanceof ValidationError) {
                 status = 400;
                 return fail(400, err.message);
+            }
+            // A publish that lost the optimistic race maps to the same 409 the
+            // version check returns, so clients keep a single conflict path.
+            if (err instanceof ConflictError) {
+                status = 409;
+                return fail(409, err.message);
             }
             // Cosmos surfaces its own status in `code`. Pass through the two the
             // client can act on: 429 is "retry later" (RU/s throttled), 409 is a

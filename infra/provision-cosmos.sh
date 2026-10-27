@@ -19,6 +19,7 @@ ACCOUNT="${3:-kitameraki-cosmos-$RANDOM}"
 DATABASE="${COSMOS_DATABASE:-TaskApp}"
 TASKS_CONTAINER="${COSMOS_TASKS_CONTAINER:-Tasks}"
 FORMS_CONTAINER="${COSMOS_FORM_SETTINGS_CONTAINER:-FormSettings}"
+FORMS_HISTORY_CONTAINER="${COSMOS_FORM_SETTINGS_HISTORY_CONTAINER:-FormSettingsHistory}"
 
 if ! command -v az >/dev/null 2>&1; then
   echo "ERROR: Azure CLI ('az') not found. Install: brew install azure-cli && az login" >&2
@@ -62,6 +63,15 @@ az cosmosdb sql container create \
   --resource-group "$RG" \
   --database-name "$DATABASE" \
   --name "$FORMS_CONTAINER" \
+  --partition-key-path "/organizationId" \
+  --output none
+
+echo "==> Container: $FORMS_HISTORY_CONTAINER (partition key /organizationId)"
+az cosmosdb sql container create \
+  --account-name "$ACCOUNT" \
+  --resource-group "$RG" \
+  --database-name "$DATABASE" \
+  --name "$FORMS_HISTORY_CONTAINER" \
   --partition-key-path "/organizationId" \
   --output none
 

@@ -1,4 +1,4 @@
-import { FormField, FormSettings } from "./formSettings";
+import { FormField, FormSettings } from "./schema";
 
 /* Server-side mirror of the FE answer rules in kitameraki-fe/src/lib/form/
    validate.ts. The browser validates to help the user; this validates so a

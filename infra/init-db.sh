@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Creates the TaskApp database and its Tasks / FormSettings containers
+# Creates the TaskApp database and its Tasks / FormSettings /
+# FormSettingsHistory containers
 # (partition key /organizationId) on whatever Cosmos endpoint the backend is
 # pointed at, using the backend's own connection string.
 #
@@ -22,7 +23,8 @@ if [ -z "${COSMOS_CONNECTION_STRING:-}" ] && [ -f local.settings.json ]; then
   COSMOS_DATABASE="${COSMOS_DATABASE:-$(read_from_settings COSMOS_DATABASE)}"
   COSMOS_TASKS_CONTAINER="${COSMOS_TASKS_CONTAINER:-$(read_from_settings COSMOS_TASKS_CONTAINER)}"
   COSMOS_FORM_SETTINGS_CONTAINER="${COSMOS_FORM_SETTINGS_CONTAINER:-$(read_from_settings COSMOS_FORM_SETTINGS_CONTAINER)}"
-  export COSMOS_DATABASE COSMOS_TASKS_CONTAINER COSMOS_FORM_SETTINGS_CONTAINER
+  COSMOS_FORM_SETTINGS_HISTORY_CONTAINER="${COSMOS_FORM_SETTINGS_HISTORY_CONTAINER:-$(read_from_settings COSMOS_FORM_SETTINGS_HISTORY_CONTAINER)}"
+  export COSMOS_DATABASE COSMOS_TASKS_CONTAINER COSMOS_FORM_SETTINGS_CONTAINER COSMOS_FORM_SETTINGS_HISTORY_CONTAINER
 fi
 
 if [ -z "${COSMOS_CONNECTION_STRING:-}" ]; then
@@ -45,6 +47,7 @@ const databaseId = process.env.COSMOS_DATABASE ?? "TaskApp";
 const containers = [
   process.env.COSMOS_TASKS_CONTAINER ?? "Tasks",
   process.env.COSMOS_FORM_SETTINGS_CONTAINER ?? "FormSettings",
+  process.env.COSMOS_FORM_SETTINGS_HISTORY_CONTAINER ?? "FormSettingsHistory",
 ];
 
 (async () => {

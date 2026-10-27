@@ -1,5 +1,5 @@
-import { FormSettings } from "./formSettings";
-import { Task } from "./task";
+import { FormSettings } from "./schema";
+import { Task } from "../task/schema";
 
 /* Renaming a custom field's key is an edit to the form definition, but stored
    answers live inside `task.customFields`, keyed by the OLD key. Without this

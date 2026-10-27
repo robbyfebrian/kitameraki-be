@@ -3,8 +3,8 @@ import { z } from "zod";
 export const taskInputSchema = z.object({
     title: z.string().min(1).max(100),
     description: z.string().max(1000).optional(),
-    // Required, matching the FE contract: the create form always sends a status,
-    // and a task without one would be ambiguous downstream.
+    // Required, matching the FE contract. `status` is a select field that the
+    // form always initializes to "todo", so the FE cannot send an empty one.
     status: z.enum(["todo", "in-progress", "completed"]),
     priority: z.enum(["low", "medium", "high"]).optional(),
     dueDate: z.string().optional(),
@@ -24,8 +24,8 @@ export const taskSchema = taskInputSchema.extend({
     updatedAt: z.string().optional(),
 });
 
-type TaskInput = z.infer<typeof taskInputSchema>;
-type TaskPatch = z.infer<typeof taskPatchSchema>;
+export type TaskInput = z.infer<typeof taskInputSchema>;
+export type TaskPatch = z.infer<typeof taskPatchSchema>;
 export type Task = z.infer<typeof taskSchema>;
 
 /* Cosmos returns system metadata (`_rid`, `_etag`, …) alongside the document.

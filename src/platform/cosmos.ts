@@ -17,6 +17,8 @@ const client = new CosmosClient(connectionString);
 const databaseId = process.env.COSMOS_DATABASE ?? "TaskApp";
 const tasksContainerId = process.env.COSMOS_TASKS_CONTAINER ?? "Tasks";
 const formSettingsContainerId = process.env.COSMOS_FORM_SETTINGS_CONTAINER ?? "FormSettings";
+const formSettingsHistoryContainerId =
+    process.env.COSMOS_FORM_SETTINGS_HISTORY_CONTAINER ?? "FormSettingsHistory";
 
 export function getTasksContainer(): Container {
     return client.database(databaseId).container(tasksContainerId);
@@ -24,4 +26,11 @@ export function getTasksContainer(): Container {
 
 export function getFormSettingsContainer(): Container {
     return client.database(databaseId).container(formSettingsContainerId);
+}
+
+/* Published form versions, one document per version. A separate container keeps
+   the single hot document read by every task write (`FormSettings`) small and
+   its partition free of history documents. */
+export function getFormSettingsHistoryContainer(): Container {
+    return client.database(databaseId).container(formSettingsHistoryContainerId);
 }

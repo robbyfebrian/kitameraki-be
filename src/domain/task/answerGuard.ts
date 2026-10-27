@@ -1,8 +1,8 @@
-import { getFormSettingsContainer } from "./cosmos";
-import { validateCustomAnswers } from "./fieldValidation";
-import { FORM_SETTINGS_ID, FormSettings } from "./formSettings";
-import { ValidationError } from "./http";
-import { stripMetadata } from "./task";
+import { getFormSettingsContainer } from "../../platform/cosmos";
+import { validateCustomAnswers } from "../form/fieldRules";
+import { FORM_SETTINGS_ID, FormSettings } from "../form/schema";
+import { ValidationError } from "../../platform/http";
+import { stripMetadata } from "./schema";
 
 /* The I/O half of answer validation: load the organization's published form and
    reject answers the form forbids. Kept apart from the pure rules in

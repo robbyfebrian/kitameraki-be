@@ -1,21 +1,20 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getFormSettingsContainer } from "../shared/cosmos";
-import { handler, ok, requireOrganizationId } from "../shared/http";
-import { FORM_SETTINGS_ID, formSettingsSchema } from "../shared/formSettings";
-import { stripMetadata } from "../shared/task";
+import { handler, ok } from "../../platform/http";
+import { requireOrganizationId } from "../../platform/ids";
+import { getFormSettings } from "../../domain/form/service";
 
 async function GetFormSettings(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     const organizationId = requireOrganizationId(request);
 
-    const { resource } = await getFormSettingsContainer().item(FORM_SETTINGS_ID, organizationId).read();
+    const settings = await getFormSettings(organizationId);
     // No stored form yet is a normal state (a fresh organization). Respond 204
     // so the client seeds its own default without a failed request or an
     // ambiguous empty body.
-    if (!resource) {
+    if (!settings) {
         return ok(undefined, 204);
     }
 
-    return ok(formSettingsSchema.parse(stripMetadata(resource)));
+    return ok(settings);
 }
 
 app.http("GetFormSettings", {
